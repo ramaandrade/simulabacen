@@ -1,0 +1,22 @@
+{
+  "name": "simulabacen",
+  "version": "1.0.0",
+  "description": "SimulaBacen — Simulador Educativo de Política Monetária do Banco Central do Brasil",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tests/simulation.test.js"
+  },
+  "keywords": [
+    "banco-central",
+    "copom",
+    "selic",
+    "politica-monetaria",
+    "open-market",
+    "agregados-monetarios",
+    "educacao-financeira",
+    "macroeconomia"
+  ],
+  "author": "Google DeepMind Agentic Coding & SimulaBacen Team",
+  "license": "MIT"
+}

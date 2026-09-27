@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimulaBacen — Simulador de Política Monetária do Banco Central do Brasil</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Live Ticker Tape -->
+  <div class="live-ticker-tape" aria-label="Cotações e Indicadores Macroeconômicos em Tempo Real">
+    <div class="ticker-track" id="ticker-track">
+      <div class="ticker-item"><span class="ticker-label">SELIC META:</span> <span class="ticker-value" id="tt-selic-meta">10,50% a.a.</span></div>
+      <div class="ticker-item"><span class="ticker-label">SELIC OVER:</span> <span class="ticker-value" id="tt-selic-over">10,40% a.a.</span></div>
+      <div class="ticker-item"><span class="ticker-label">IPCA 12M:</span> <span class="ticker-value" id="tt-ipca">3,80%</span></div>
+      <div class="ticker-item"><span class="ticker-label">META CMN:</span> <span class="ticker-value">3,00% (±1,50%)</span></div>
+      <div class="ticker-item"><span class="ticker-label">DÓLAR PTAX:</span> <span class="ticker-value" id="tt-dolar">R$ 5,15</span></div>
+      <div class="ticker-item"><span class="ticker-label">BASE M0:</span> <span class="ticker-value" id="tt-m0">R$ 420 bi</span></div>
+      <div class="ticker-item"><span class="ticker-label">MEIOS M1:</span> <span class="ticker-value" id="tt-m1">R$ 980 bi</span></div>
+      <div class="ticker-item"><span class="ticker-label">PIB 12M:</span> <span class="ticker-value" id="tt-pib">+2,20%</span></div>
+      <!-- Duplicado para rolagem contínua suave -->
+      <div class="ticker-item"><span class="ticker-label">SELIC META:</span> <span class="ticker-value" id="tt2-selic-meta">10,50% a.a.</span></div>
+      <div class="ticker-item"><span class="ticker-label">SELIC OVER:</span> <span class="ticker-value" id="tt2-selic-over">10,40% a.a.</span></div>
+      <div class="ticker-item"><span class="ticker-label">IPCA 12M:</span> <span class="ticker-value" id="tt2-ipca">3,80%</span></div>
+      <div class="ticker-item"><span class="ticker-label">META CMN:</span> <span class="ticker-value">3,00% (±1,50%)</span></div>
+      <div class="ticker-item"><span class="ticker-label">DÓLAR PTAX:</span> <span class="ticker-value" id="tt2-dolar">R$ 5,15</span></div>
+    </div>
+  </div>
+
+  <!-- Header Institucional -->
+  <header class="bcb-header">
+    <div class="bcb-brand">
+      <div class="bcb-seal" title="Banco Central do Brasil — Autarquia Federal">BCB</div>
+      <div class="bcb-titles">
+        <h1>
+          SimulaBacen
+          <span class="bcb-badge-tag" id="badge-active-mode">Modo Livre / Sandbox</span>
+        </h1>
+        <p>Simulador Educativo de Política Monetária & Mesa de Operações do BCB</p>
+      </div>
+    </div>
+    <div class="bcb-actions">
+      <button class="btn btn-outline" id="btn-theme-toggle" title="Alternar entre Sala de Situação Escura e Gabinete Claro">
+        ☀️ Modo Claro
+      </button>
+      <button class="btn btn-outline" id="btn-open-ata" title="Visualizar a Ata Oficial do Copom da última reunião">
+        📜 Ata do Copom
+      </button>
+      <button class="btn btn-outline" id="btn-quick-glossary" title="Consultar conceitos e termos técnicos">
+        📖 Glossário
+      </button>
+      <button class="btn btn-danger" id="btn-reset-sim" title="Reiniciar a simulação para os valores iniciais">
+        🔄 Reiniciar
+      </button>
+    </div>
+  </header>
+
+  <!-- Barra de Abas (Navegação dos Módulos) -->
+  <nav class="module-nav-bar" aria-label="Navegação dos Módulos">
+    <button class="tab-btn active" data-tab="tab-copom">
+      🏛️ Módulo 1: Reunião do Copom
+    </button>
+    <button class="tab-btn" data-tab="tab-openmarket">
+      🏦 Módulo 2: Mesa do Open Market
+    </button>
+    <button class="tab-btn" data-tab="tab-transmission">
+      📈 Módulo 3: Transmissão na Economia
+    </button>
+    <button class="tab-btn" data-tab="tab-challenges">
+      🎯 Módulo 4: Desafios Históricos
+    </button>
+    <button class="tab-btn" data-tab="tab-glossary">
+      📖 Dicionário & Conceitos Didáticos
+    </button>
+  </nav>
+
+  <!-- Macro KPI Strip (Painel Superior de Indicadores) -->
+  <section class="macro-strip" aria-label="Indicadores Macroeconômicos Centrais">
+    <div class="kpi-card">
+      <div class="kpi-title">
+        <span>Selic Meta (Copom)</span>
+        <span class="badge-tag info">Taxa Básica</span>
+      </div>
+      <div class="kpi-value" id="kpi-selic-meta">10,50%</div>
+      <div class="kpi-sub">
+        <span>Anterior: <strong id="kpi-selic-prev">10,50%</strong></span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title">
+        <span>Selic Over (Mercado)</span>
+        <span class="badge-tag info">Overnight</span>
+      </div>
+      <div class="kpi-value" id="kpi-selic-over">10,40%</div>
+      <div class="kpi-sub">
+        <span>Diferença: <strong id="kpi-over-spread">-0,10 p.p.</strong></span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title">
+        <span>IPCA (12 Meses)</span>
+        <span class="badge-tag success" id="kpi-ipca-badge">Na Meta</span>
+      </div>
+      <div class="kpi-value" id="kpi-ipca">3,80%</div>
+      <div class="kpi-sub">
+        <span>Meta CMN: <strong>3,00% (±1,5%)</strong></span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title">
+        <span>Expectativa Focus</span>
+        <span class="badge-tag warning">12 Meses</span>
+      </div>
+      <div class="kpi-value" id="kpi-focus">3,90%</div>
+      <div class="kpi-sub">
+        <span>Consenso de mercado</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title">
+        <span>Crescimento do PIB</span>
+        <span class="badge-tag success">Atividade</span>
+      </div>
+      <div class="kpi-value" id="kpi-pib">+2,20%</div>
+      <div class="kpi-sub">
+        <span>Hiato: <strong id="kpi-hiato">+0,10%</strong></span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title">
+        <span>Rodada / Ciclo</span>
+        <span class="badge-tag info">Tempo</span>
+      </div>
+      <div class="kpi-value" id="kpi-round">R1 / 45d</div>
+      <div class="kpi-sub">
+        <span>Ano: <strong id="kpi-year">2026</strong></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Conteúdo Principal -->
+  <main class="main-container">
+
+    <!-- ========================================== -->
+    <!-- ABA 1: REUNIÃO DO COPOM                    -->
+    <!-- ========================================== -->
+    <div class="tab-pane active" id="tab-copom">
+      <div class="module-grid">
+        <!-- Coluna da Esquerda: Análise de Conjuntura & Votação -->
+        <div class="dash-card">
+          <div class="card-header-line">
+            <h2 class="card-title">🏛️ Decisão de Taxa Selic — 45 dias</h2>
+            <span class="badge-tag info" id="copom-status-tag">Votação Aberta</span>
+          </div>
+
+          <!-- Relatório de Conjuntura do Copom -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+              Como membro votante do <strong>Copom</strong>, analise o balanço de riscos inflacionários e de atividade econômica antes de escolher o voto do colegiado:
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;">
+              <div style="background: var(--bg-surface); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="color: var(--text-dim); font-size: 0.72rem; text-transform: uppercase;">Dólar Comercial PTAX</div>
+                <div style="font-weight: 700; font-family: var(--font-mono); font-size: 1.1rem;" id="copom-conj-dolar">R$ 5,15</div>
+              </div>
+              <div style="background: var(--bg-surface); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="color: var(--text-dim); font-size: 0.72rem; text-transform: uppercase;">Risco-País (CDS 5A)</div>
+                <div style="font-weight: 700; font-family: var(--font-mono); font-size: 1.1rem;" id="copom-conj-cds">210 pts</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Matriz de Votação Rápida -->
+          <div>
+            <label style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 8px;">
+              Opções de Deliberação do Colegiado:
+            </label>
+            <div class="vote-matrix">
+              <button class="btn-vote hike" data-delta="1.00">
+                <span>+1,00%</span>
+                <span class="label">Aperto Forte</span>
+              </button>
+              <button class="btn-vote hike" data-delta="0.50">
+                <span>+0,50%</span>
+                <span class="label">Aperto Moderado</span>
+              </button>
+              <button class="btn-vote hike" data-delta="0.25">
+                <span>+0,25%</span>
+                <span class="label">Aperto Leve</span>
+              </button>
+              <button class="btn-vote hold" data-delta="0.00">
+                <span>0,00%</span>
+                <span class="label">Manter Taxa</span>
+              </button>
+              <button class="btn-vote cut" data-delta="-0.25">
+                <span>-0,25%</span>
+                <span class="label">Corte Leve</span>
+              </button>
+              <button class="btn-vote cut" data-delta="-0.50">
+                <span>-0,50%</span>
+                <span class="label">Corte Moderado</span>
+              </button>
+              <button class="btn-vote cut" data-delta="-1.00">
+                <span>-1,00%</span>
+                <span class="label">Corte Forte</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Ajuste Personalizado -->
+          <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Ajuste Personalizado:</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="number" id="input-custom-delta" step="0.25" min="-3.00" max="3.00" value="0.00" style="width: 80px; padding: 6px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-main); font-family: var(--font-mono); text-align: center;">
+              <span style="font-size: 0.85rem;">%</span>
+              <button class="btn btn-primary" id="btn-apply-custom-vote">Votar</button>
+            </div>
+          </div>
+
+          <!-- Orientação Didática -->
+          <div class="didactic-box" id="copom-didactic-box">
+            <div>💡</div>
+            <div id="copom-didactic-text">
+              <strong>Diagnóstico de Mercado:</strong> Avalie a trajetória do IPCA em relação à meta contínua do CMN de 3,00% com banda de tolerância entre 1,50% e 4,50%.
+            </div>
+          </div>
+
+          <!-- Botão de Ver Ata -->
+          <button class="btn btn-outline" id="btn-view-last-ata" style="width: 100%; justify-content: center;">
+            📄 Emitir Comunicado e Ata Oficial do Copom
+          </button>
+        </div>
+
+        <!-- Coluna da Direita: Projeções Gráficas -->
+        <div class="dash-card">
+          <div class="card-header-line">
+            <h2 class="card-title">📊 Projeção de Inflação & Meta do CMN</h2>
+            <span class="badge-tag success">Banda 1,5% a 4,5%</span>
+          </div>
+
+          <!-- Gráfico de IPCA vs Meta -->
+          <div class="chart-box">
+            <div class="chart-header">
+              <span>Trajetória do IPCA 12m vs Centro da Meta (3,00%)</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">Sombreado: Banda de Tolerância</span>
+            </div>
+            <canvas id="chart-ipca" class="sim-canvas" width="600" height="240"></canvas>
+          </div>
+
+          <!-- Gráfico de Trajetória da Selic -->
+          <div class="chart-box">
+            <div class="chart-header">
+              <span>Evolução da Taxa Selic Meta vs Selic Over</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">(% ao ano)</span>
+            </div>
+            <canvas id="chart-selic" class="sim-canvas" width="600" height="220"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ABA 2: MESA DO OPEN MARKET                 -->
+    <!-- ========================================== -->
+    <div class="tab-pane" id="tab-openmarket">
+      <div class="module-grid">
+        <!-- Coluna da Esquerda: Intervenções de Liquidez -->
+        <div class="dash-card">
+          <div class="card-header-line">
+            <h2 class="card-title">🏦 Mesa de Operações de Mercado Aberto</h2>
+            <span class="badge-tag info">Intervenção Diária</span>
+          </div>
+
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            O Banco Central atua diariamente comprando e vendendo títulos públicos federais (LFT / LTN) com instituições credenciadas (dealers) para calibrar a taxa de juros diária <strong>Selic Over</strong>.
+          </p>
+
+          <!-- Controles de Open Market -->
+          <div class="open-market-controls">
+            <!-- Operação Contracionista -->
+            <div class="market-op-card">
+              <div style="font-weight: 700; color: var(--red-alert); font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
+                🔴 Vender Títulos Públicos
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-muted);">
+                <strong>Política Contracionista:</strong> O BCB entrega títulos e retira moeda de circulação, enxugando as reservas bancárias.
+              </p>
+              <button class="btn btn-danger" id="btn-openmarket-sell" style="margin-top: auto;">
+                Vender R$ 15 bi em Títulos
+              </button>
+            </div>
+
+            <!-- Operação Expansionista -->
+            <div class="market-op-card">
+              <div style="font-weight: 700; color: var(--green-stable); font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
+                🟢 Comprar Títulos Públicos
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-muted);">
+                <strong>Política Expansionista:</strong> O BCB injeta moeda nos bancos e acolhe títulos, aumentando a liquidez interbancária.
+              </p>
+              <button class="btn btn-success" id="btn-openmarket-buy" style="margin-top: auto;">
+                Comprar R$ 15 bi em Títulos
+              </button>
+            </div>
+          </div>
+
+          <!-- Depósito Compulsório -->
+          <div style="background: var(--bg-surface); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; font-weight: 700;">Alíquota do Depósito Compulsório (à vista):</span>
+              <span style="font-family: var(--font-mono); font-weight: 700; color: var(--blue-light); font-size: 1.1rem;" id="lbl-compulsorio-ratio">25%</span>
+            </div>
+            <div class="slider-group">
+              <input type="range" id="range-compulsorio" min="10" max="50" step="5" value="25">
+              <div class="slider-labels">
+                <span>10% (Alívio)</span>
+                <span>25% (Padrão)</span>
+                <span>50% (Aperto Máximo)</span>
+              </div>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text-dim);" id="lbl-compulsorio-formula">
+              Multiplicador Bancário: <strong>m = (1 + c) / (c + r) = 2.67</strong>. Quanto maior a alíquota, menor a capacidade dos bancos de criar moeda escritural.
+            </p>
+          </div>
+
+          <!-- Redesconto Bancário -->
+          <div style="background: var(--bg-surface); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; font-weight: 700;">Taxa de Redesconto (Prestamista de Última Instância):</span>
+              <span style="font-family: var(--font-mono); font-weight: 700; color: var(--gold); font-size: 1.1rem;" id="lbl-redesconto-rate">12,50% a.a.</span>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">
+              Taxa punitiva (+2,0 p.p. sobre a Selic Meta) para empréstimos emergenciais concedidos a bancos em crise de liquidez.
+            </p>
+            <button class="btn btn-outline" id="btn-trigger-redesconto" style="align-self: flex-start;">
+              ⚡ Abrir Linha Emergencial de Redesconto (+R$ 20 bi)
+            </button>
+          </div>
+
+          <div class="didactic-box info" id="openmarket-feedback-box">
+            <div>ℹ️</div>
+            <div id="openmarket-feedback-text">
+              <strong>Mecanismo de Atuação:</strong> Utilize a venda de títulos para evitar que a Selic Over despenque abaixo da Selic Meta quando o mercado estiver com excesso de reservas.
+            </div>
+          </div>
+        </div>
+
+        <!-- Coluna da Direita: Agregados Monetários & Gráfico M0/M1 -->
+        <div class="dash-card">
+          <div class="card-header-line">
+            <h2 class="card-title">💰 Agregados Monetários & Criação de Moeda</h2>
+            <span class="badge-tag info">M0 vs M1</span>
+          </div>
+
+          <!-- Decomposição de M0 e M1 -->
+          <div class="agregados-breakdown">
+            <div class="agg-pill">
+              <div class="title">Base Monetária (M0)</div>
+              <div class="val" id="agg-m0" style="color: var(--blue-light);">R$ 420 bi</div>
+              <div style="font-size: 0.7rem; color: var(--text-dim);">Papel-moeda + Reservas</div>
+            </div>
+            <div class="agg-pill">
+              <div class="title">Reservas no BCB</div>
+              <div class="val" id="agg-reservas" style="color: var(--gold);">R$ 85 bi</div>
+              <div style="font-size: 0.7rem; color: var(--text-dim);">Caixa dos bancos no BC</div>
+            </div>
+            <div class="agg-pill">
+              <div class="title">Multiplicador (m)</div>
+              <div class="val" id="agg-multiplier" style="color: var(--purple);">2.67x</div>
+              <div style="font-size: 0.7rem; color: var(--text-dim);">(1 + c) / (c + r)</div>
+            </div>
+            <div class="agg-pill">
+              <div class="title">Meios Pagamento (M1)</div>
+              <div class="val" id="agg-m1" style="color: var(--green-stable);">R$ 980 bi</div>
+              <div style="font-size: 0.7rem; color: var(--text-dim);">PMPP + Dep. à Vista</div>
+            </div>
+          </div>
+
+          <!-- Gráfico de Agregados -->
+          <div class="chart-box">
+            <div class="chart-header">
+              <span>Evolução da Base Monetária (M0) vs Meios de Pagamento (M1)</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">(R$ Bilhões)</span>
+            </div>
+            <canvas id="chart-aggregates" class="sim-canvas" width="600" height="260"></canvas>
+          </div>
+
+          <!-- Agregados Ampliados M2, M3, M4 -->
+          <div style="background: var(--bg-surface); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); font-size: 0.82rem;">
+            <div style="font-weight: 700; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase;">
+              Agregados Monetários Ampliados (Riqueza Financeira):
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+              <div><strong>M2:</strong> <span id="lbl-m2">R$ 4.600 bi</span> <span style="font-size: 0.7rem; color: var(--text-dim);">(+ CDB e Poupança)</span></div>
+              <div><strong>M3:</strong> <span id="lbl-m3">R$ 6.500 bi</span> <span style="font-size: 0.7rem; color: var(--text-dim);">(+ Quotas Fundos DI)</span></div>
+              <div><strong>M4:</strong> <span id="lbl-m4">R$ 8.200 bi</span> <span style="font-size: 0.7rem; color: var(--text-dim);">(+ Títulos Públicos)</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ABA 3: TRANSMISSÃO NA ECONOMIA REAL        -->
+    <!-- ========================================== -->
+    <div class="tab-pane" id="tab-transmission">
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="dash-card">
+          <div class="card-header-line">
+            <h2 class="card-title">📈 Mecanismo de Transmissão da Política Monetária</h2>
+            <span class="badge-tag info">Canais Reais</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Quando o Banco Central altera a taxa Selic ou os agregados monetários, as decisões afetam a economia através de quatro canais fundamentais. Acompanhe a repercussão encadeada no crédito, nas aplicações, no emprego e nos preços:
+          </p>
+        </div>
+
+        <!-- Grid de 4 Canais de Transmissão -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+
+          <!-- Canal 1: Crédito -->
+          <div class="dash-card">
+            <div class="card-header-line">
+              <h3 class="card-title" style="font-size: 0.95rem;">1. Custo do Crédito & Empréstimos</h3>
+              <span class="badge-tag info" id="trans-credit-badge">Equilibrado</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Juros Médios PF</div>
+                <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: var(--red-alert);" id="trans-taxa-pf">42,50%</div>
+                <div style="font-size: 0.7rem; color: var(--text-dim);">ao ano (crédito pessoal)</div>
+              </div>
+              <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Juros Médios PJ</div>
+                <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: var(--gold);" id="trans-taxa-pj">21,00%</div>
+                <div style="font-size: 0.7rem; color: var(--text-dim);">ao ano (capital de giro)</div>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0 4px;">
+              <span>Inadimplência Geral: <strong id="trans-inadimplencia">3,40%</strong></span>
+              <span>Concessões de Crédito: <strong id="trans-concessoes">510 pts</strong></span>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-dim);" id="trans-credit-desc">
+              Juros mais altos encarecem as parcelas, desestimulando novas compras a prazo e investimentos industriais.
+            </p>
+          </div>
+
+          <!-- Canal 2: Investimentos -->
+          <div class="dash-card">
+            <div class="card-header-line">
+              <h3 class="card-title" style="font-size: 0.95rem;">2. Rendimento das Aplicações</h3>
+              <span class="badge-tag success">Portfólios</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Tesouro Selic (LFT)</div>
+                <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: var(--blue-light);" id="trans-tesouro">10,50%</div>
+                <div style="font-size: 0.7rem; color: var(--text-dim);">100% Selic Meta a.a.</div>
+              </div>
+              <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Poupança (Lei 12.703)</div>
+                <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: var(--green-stable);" id="trans-poupanca">6,17%</div>
+                <div style="font-size: 0.7rem; color: var(--text-dim);" id="trans-poupanca-rule">Selic > 8,5% (0,5% a.m.)</div>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0 4px;">
+              <span>CDB 100% CDI: <strong id="trans-cdb">10,30%</strong></span>
+              <span>Atratividade Bolsa: <strong id="trans-bolsa-score">62 / 100</strong></span>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-dim);" id="trans-invest-desc">
+              Selic alta atrai recursos para títulos pós-fixados e desestimula a tomada de risco na bolsa de valores.
+            </p>
+          </div>
+
+          <!-- Canal 3: Atividade & Emprego -->
+          <div class="dash-card">
+            <div class="card-header-line">
+              <h3 class="card-title" style="font-size: 0.95rem;">3. Atividade Econômica & Emprego</h3>
+              <span class="badge-tag info" id="trans-pib-badge">Sustentável</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">IBC-Br / PIB 12m</div>
+                <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: var(--green-stable);" id="trans-pib-val">+2,20%</div>
+                <div style="font-size: 0.7rem; color: var(--text-dim);">Variação anual</div>
+              </div>
+              <div style="background: var(--bg-surface); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Hiato do Produto</div>
+                <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: var(--blue-light);" id="trans-hiato-val">+0,10%</div>
+                <div style="font-size: 0.7rem; color: var(--text-dim);">PIB Efetivo vs Potencial</div>
+              </div>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-dim);" id="trans-activity-desc">
+              A desaceleração da demanda agregada alivia a pressão sobre a capacidade instalada das fábricas e sobre os salários.
+            </p>
+          </div>
+
+          <!-- Canal 4: Termômetro da Inflação -->
+          <div class="dash-card">
+            <div class="card-header-line">
+              <h3 class="card-title" style="font-size: 0.95rem;">4. Termômetro do IPCA vs Meta do CMN</h3>
+              <span class="badge-tag success" id="trans-ipca-status-badge">Dentro da Meta</span>
+            </div>
+            
+            <div style="background: var(--bg-surface); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">IPCA Acumulado 12 Meses:</span>
+                <span style="font-size: 1.6rem; font-weight: 800; font-family: var(--font-mono);" id="trans-ipca-val">3,80%</span>
+              </div>
+              
+              <!-- Barra Visual da Meta -->
+              <div style="position: relative; height: 16px; background: #1e293b; border-radius: 8px; overflow: hidden; margin-bottom: 6px;">
+                <!-- Banda de tolerância verde [1.5% a 4.5%] -->
+                <div style="position: absolute; left: 15%; width: 30%; height: 100%; background: rgba(16, 185, 129, 0.45); border-left: 2px dashed #10b981; border-right: 2px dashed #10b981;" title="Intervalo de Tolerância da Meta (1,50% a 4,50%)"></div>
+                <!-- Centro da meta (3.0%) -->
+                <div style="position: absolute; left: 30%; width: 2px; height: 100%; background: #f59e0b;" title="Centro da Meta (3,00%)"></div>
+                <!-- Marcador da taxa atual -->
+                <div id="trans-ipca-marker" style="position: absolute; left: 38%; width: 8px; height: 100%; background: #38bdf8; border-radius: 4px; transform: translateX(-50%); box-shadow: 0 0 6px #38bdf8;" title="IPCA Atual"></div>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-dim);">
+                <span>0,0%</span>
+                <span>Piso: 1,5%</span>
+                <span style="color: var(--gold); font-weight: 700;">Centro: 3,0%</span>
+                <span>Teto: 4,5%</span>
+                <span>10,0%+</span>
+              </div>
+            </div>
+
+            <p style="font-size: 0.78rem; color: var(--text-dim);" id="trans-ipca-desc">
+              Inflação ancorada dentro dos parâmetros fixados pelo Conselho Monetário Nacional.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ABA 4: DESAFIOS HISTÓRICOS (GAMIFICADO)    -->
+    <!-- ========================================== -->
+    <div class="tab-pane" id="tab-challenges">
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="dash-card">
+          <div class="card-header-line">
+            <h2 class="card-title">🎯 Modo Desafio Histórico da Economia Brasileira</h2>
+            <span class="badge-tag gold">Simulação Guiada & Avaliação</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Escolha um dos três episódios marcantes da história macroeconômica do Brasil. Você terá um número limitado de reuniões do Copom e operações no Open Market para atingir metas rigorosas e receber o parecer avaliativo do Conselho Monetário Nacional.
+          </p>
+        </div>
+
+        <!-- Grade de Escolha dos 3 Cenários -->
+        <div class="scenario-selection-grid">
+          <!-- Cenário 1 -->
+          <div class="scenario-card" data-scenario="commodities">
+            <div>
+              <div class="scenario-icon">🔥</div>
+              <h3 style="font-size: 1.05rem; font-weight: 700; margin: 8px 0 4px 0;">Choque de Commodities</h3>
+              <div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 8px;">Inspirado em 2021–2022</div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;">
+                Petróleo e alimentos disparam no exterior. A inflação brasileira sobe para <strong>10,40%</strong> e o câmbio chega a R$ 5,65. Conduza um aperto monetário firme para reconduzir os preços à meta.
+              </p>
+            </div>
+            <div>
+              <span class="badge-tag danger" style="margin-bottom: 10px;">Duração: 5 Reuniões</span>
+              <button class="btn btn-outline" style="width: 100%; justify-content: center;">Iniciar Desafio 1</button>
+            </div>
+          </div>
+
+          <!-- Cenário 2 -->
+          <div class="scenario-card" data-scenario="recessao">
+            <div>
+              <div class="scenario-icon">📉</div>
+              <h3 style="font-size: 1.05rem; font-weight: 700; margin: 8px 0 4px 0;">Recessão & Desaceleração</h3>
+              <div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 8px;">Inspirado em 2016–2017</div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;">
+                O PIB cai <strong>-3,40%</strong> e o crédito trava. A taxa Selic herdada está sufocando as empresas em <strong>13,75%</strong>. Conduza um ciclo consistente de cortes de juros sem violar o teto da inflação.
+              </p>
+            </div>
+            <div>
+              <span class="badge-tag warning" style="margin-bottom: 10px;">Duração: 5 Reuniões</span>
+              <button class="btn btn-outline" style="width: 100%; justify-content: center;">Iniciar Desafio 2</button>
+            </div>
+          </div>
+
+          <!-- Cenário 3 -->
+          <div class="scenario-card" data-scenario="liquidez">
+            <div>
+              <div class="scenario-icon">⚡</div>
+              <h3 style="font-size: 1.05rem; font-weight: 700; margin: 8px 0 4px 0;">Crise de Liquidez Bancária</h3>
+              <div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 8px;">Inspirado na Crise de 2008</div>
+              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;">
+                Pânico internacional congela empréstimos interbancários. As reservas no BC despencam para <strong>R$ 30 bi</strong> e a Selic Over salta para <strong>13,50%</strong>. Atue como prestamista de última instância.
+              </p>
+            </div>
+            <div>
+              <span class="badge-tag info" style="margin-bottom: 10px;">Duração: 4 Reuniões</span>
+              <button class="btn btn-outline" style="width: 100%; justify-content: center;">Iniciar Desafio 3</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Painel de Acompanhamento do Desafio Ativo -->
+        <div class="dash-card" id="active-challenge-panel" style="display: none;">
+          <div class="card-header-line">
+            <div>
+              <span class="badge-tag gold" id="ch-active-badge">Desafio em Curso</span>
+              <h3 class="card-title" id="ch-active-title" style="margin-top: 4px;">Choque de Commodities</h3>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: var(--blue-light);" id="ch-active-round-tracker">
+              Reunião 1 de 5
+            </div>
+          </div>
+
+          <div style="background: var(--bg-surface); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); font-size: 0.85rem;" id="ch-active-narrative">
+            Narrativa do cenário...
+          </div>
+
+          <!-- Metas do Desafio -->
+          <div>
+            <h4 style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+              Objetivos da Autoridade Monetária:
+            </h4>
+            <div style="display: flex; flex-direction: column; gap: 8px;" id="ch-active-objectives-list">
+              <!-- Renderizado via JS -->
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div class="didactic-box warning" style="flex: 1;" id="ch-active-hint">
+              <div>💡</div>
+              <div id="ch-active-hint-text">Dica pedagógica...</div>
+            </div>
+            <button class="btn btn-primary" id="btn-finish-challenge" style="padding: 12px 20px;">
+              📊 Concluir Desafio & Gerar Boletim de Desempenho
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ABA 5: GLOSSÁRIO DIDÁTICO                  -->
+    <!-- ========================================== -->
+    <div class="tab-pane" id="tab-glossary">
+      <div class="dash-card">
+        <div class="card-header-line">
+          <h2 class="card-title">📖 Dicionário de Política Monetária & Legislação do BCB</h2>
+          <span class="badge-tag info">Guia do Estudante</span>
+        </div>
+        <p style="font-size: 0.88rem; color: var(--text-muted);">
+          Consulte as bases conceituais, termos da legislação brasileira (Lei 4.595/64, LC 179/2021, Lei 12.703/2012) e fórmulas utilizadas nas simulações universitárias.
+        </p>
+
+        <!-- Barra de Busca e Filtro de Categoria -->
+        <div class="glossary-search-bar">
+          <input type="text" id="glossary-search-input" class="search-input" placeholder="🔍 Digite para pesquisar um termo (ex: Selic Over, M1, Compulsório, Poupança)...">
+          <select id="glossary-category-select" class="filter-select">
+            <option value="Todas">Todas as Categorias</option>
+            <option value="Governança & Instituições">Governança & Instituições</option>
+            <option value="Taxas & Juros">Taxas & Juros</option>
+            <option value="Instrumentos de Liquidez">Instrumentos de Liquidez</option>
+            <option value="Agregados Monetários">Agregados Monetários</option>
+            <option value="Indicadores Macroeconômicos">Indicadores Macroeconômicos</option>
+          </select>
+        </div>
+
+        <!-- Grade de Cards do Glossário -->
+        <div class="glossary-grid" id="glossary-cards-container">
+          <!-- Preenchido via JS -->
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: ATA OFICIAL DO COPOM               -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-ata-overlay">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 style="font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+          📜 Ata Oficial da Reunião do Copom — Banco Central do Brasil
+        </h3>
+        <button class="btn btn-outline" id="btn-close-ata-modal" style="padding: 4px 8px;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="ata-container" id="modal-ata-text">
+          Carregando ata oficial...
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-copy-ata">📋 Copiar Texto da Ata</button>
+        <button class="btn btn-primary" id="btn-print-ata">🖨️ Imprimir / Salvar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: BOLETIM DE DESEMPENHO DO DESAFIO    -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-report-overlay">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 style="font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+          🎓 Boletim Avaliativo do Conselho Monetário Nacional (CMN)
+        </h3>
+        <button class="btn btn-outline" id="btn-close-report-modal" style="padding: 4px 8px;">✕</button>
+      </div>
+      <div class="modal-body" id="modal-report-body">
+        <!-- Preenchido via JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-return-sandbox">Retornar ao Modo Livre</button>
+        <button class="btn btn-primary" id="btn-print-report">🖨️ Imprimir Relatório Acadêmico</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rodapé Institucional -->
+  <footer class="bcb-footer">
+    <div>
+      🏛️ <strong>SimulaBacen</strong> — Laboratório Didático de Economia & Finanças | Baseado na Legislação Monetária do Brasil
+    </div>
+    <div>
+      Desenvolvido para dinâmicas de sala de aula e autoestudo universitário.
+    </div>
+  </footer>
+
+  <!-- Scripts Modulares -->
+  <script src="js/model.js"></script>
+  <script src="js/copom.js"></script>
+  <script src="js/openmarket.js"></script>
+  <script src="js/transmission.js"></script>
+  <script src="js/challenges.js"></script>
+  <script src="js/glossary.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
