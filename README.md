@@ -1,5 +1,8 @@
 # 🏛️ SimulaBacen — Simulador de Política Monetária do Banco Central do Brasil
 
+> 🌐 **Acesso Online (GitHub Pages):** [https://ramaandrade.github.io/simulabacen/](https://ramaandrade.github.io/simulabacen/)  
+> 📦 **Repositório GitHub:** [https://github.com/ramaandrade/simulabacen](https://github.com/ramaandrade/simulabacen)
+
 **SimulaBacen** é um aplicativo web educativo, interativo e intuitivo, desenvolvido sob medida para estudantes de graduação dos cursos de Finanças, Ciências Econômicas, Administração e Ciências Contábeis vivenciarem a formulação e execução da **política monetária brasileira**.
 
 ---
